@@ -1,0 +1,32 @@
+[project]
+name = "ocrmanga"
+version = "0.1.0"
+description = "OCR Manga processing application"
+authors = [
+    {name = "bensfoo", email = "bensfoo@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.104.1",
+    "uvicorn>=0.24.0",
+    "python-multipart>=0.0.6",
+    "pillow>=10.1.0",
+    "opencv-python>=4.8.1.78",
+    "numpy>=1.25.2",
+    "google-cloud-translate>=3.12.1",
+    "manga-ocr>=0.1.11",
+    "paddlepaddle>=2.5.2",
+    "paddleocr>=2.7.0.3",
+    "requests>=2.31.0",
+    "python-dotenv (>=1.1.1,<2.0.0)"
+]
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

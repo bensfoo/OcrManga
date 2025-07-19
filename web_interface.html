@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manga OCR Translator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+        }
+        .upload-area:hover {
+            border-color: #007bff;
+        }
+        .upload-area.dragover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .upload-btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .upload-btn:hover {
+            background: #0056b3;
+        }
+        .process-btn {
+            background: #28a745;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .process-btn:hover {
+            background: #1e7e34;
+        }
+        .process-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .preview {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .preview img {
+            max-width: 100%;
+            max-height: 400px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .result {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .loading {
+            display: none;
+            color: #007bff;
+            margin: 20px 0;
+        }
+        .error {
+            color: #dc3545;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .success {
+            color: #28a745;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .download-btn {
+            background: #17a2b8;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        .download-btn:hover {
+            background: #117a8b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Manga OCR Translator</h1>
+        <p style="text-align: center; color: #666;">
+            Upload a manga image to translate Japanese text to English while preserving the original layout.
+        </p>
+        
+        <div class="upload-area" id="uploadArea">
+            <p>📁 Drag & drop your manga image here or</p>
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                Choose File
+            </button>
+            <input type="file" id="fileInput" accept="image/*">
+            <p style="font-size: 12px; color: #666; margin-top: 10px;">
+                Supported formats: JPG, PNG, WebP
+            </p>
+        </div>
+        
+        <div class="preview" id="preview" style="display: none;">
+            <h3>Original Image:</h3>
+            <img id="previewImg" src="" alt="Preview">
+            <button class="process-btn" id="processBtn" onclick="processImage()">
+                🔄 Translate Manga
+            </button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <p>🔄 Processing image... This may take a few moments.</p>
+            <button class="upload-btn" id="cancelBtn" onclick="cancelProcessing()" style="background: #dc3545; margin-top: 10px;">
+                ❌ Cancel Processing
+            </button>
+        </div>
+        
+        <div class="error" id="error" style="display: none;"></div>
+        
+        <div class="result" id="result" style="display: none;">
+            <h3>Translated Image:</h3>
+            <img id="resultImg" src="" alt="Translated manga">
+            <br>
+            <a class="download-btn" id="downloadBtn" href="#" download="translated_manga.png">
+                💾 Download Translated Image
+            </a>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        let currentRequestId = null;
+        let abortController = null;
+        
+        // File input handling
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            handleFile(e.target.files[0]);
+        });
+        
+        // Drag and drop handling
+        const uploadArea = document.getElementById('uploadArea');
+        
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+        
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('Please select an image file.');
+                return;
+            }
+            
+            selectedFile = file;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('preview').style.display = 'block';
+                hideError();
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        async function processImage() {
+            if (!selectedFile) {
+                showError('Please select an image first.');
+                return;
+            }
+            
+            // Show loading state
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('processBtn').disabled = true;
+            document.getElementById('result').style.display = 'none';
+            hideError();
+            
+            // Create abort controller for cancellation
+            abortController = new AbortController();
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                
+                const response = await fetch('http://localhost:8000/translate-manga', {
+                    method: 'POST',
+                    body: formData,
+                    signal: abortController.signal
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 499) {
+                        throw new Error('Request was cancelled');
+                    }
+                    throw new Error(`Server error: ${response.status}`);
+                }
+                
+                // Get request ID from response headers
+                currentRequestId = response.headers.get('X-Request-Id');
+                
+                const blob = await response.blob();
+                const imageUrl = URL.createObjectURL(blob);
+                
+                // Show result
+                document.getElementById('resultImg').src = imageUrl;
+                document.getElementById('downloadBtn').href = imageUrl;
+                document.getElementById('result').style.display = 'block';
+                
+                showSuccess('Translation completed successfully!');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                if (error.name === 'AbortError' || error.message.includes('cancelled')) {
+                    showError('Processing was cancelled.');
+                } else {
+                    showError('Failed to process image. Please make sure the API server is running.');
+                }
+            } finally {
+                // Hide loading state
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('processBtn').disabled = false;
+                currentRequestId = null;
+                abortController = null;
+            }
+        }
+        
+        async function cancelProcessing() {
+            if (abortController) {
+                abortController.abort();
+            }
+            
+            if (currentRequestId) {
+                try {
+                    await fetch(`http://localhost:8000/cancel/${currentRequestId}`, {
+                        method: 'POST'
+                    });
+                } catch (error) {
+                    console.error('Failed to cancel request:', error);
+                }
+            }
+        }
+        
+        function showError(message) {
+            document.getElementById('error').textContent = message;
+            document.getElementById('error').style.display = 'block';
+        }
+        
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+        
+        function showSuccess(message) {
+            // You could add a success message element if needed
+            console.log(message);
+        }
+        
+        // Check API health on page load
+        window.addEventListener('load', async function() {
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                if (!response.ok) {
+                    showError('API server is not responding. Please start the server with: python main.py');
+                }
+            } catch (error) {
+                showError('Cannot connect to API server. Please start the server with: python main.py');
+            }
+        });
+    </script>
+</body>
+</html>
