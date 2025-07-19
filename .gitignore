@@ -31,8 +31,9 @@ ENV/
 .env.production
 
 # Google Cloud Credentials
-*.json
+credentials.json
 credentials/
+.claude/
 
 # IDE
 .vscode/

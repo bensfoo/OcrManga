@@ -19,13 +19,11 @@ dependencies = [
     "paddlepaddle>=2.5.2",
     "paddleocr>=2.7.0.3",
     "requests>=2.31.0",
-    "python-dotenv (>=1.1.1,<2.0.0)"
+    "python-dotenv (>=1.1.1,<2.0.0)",
 ]
 
 [tool.poetry]
 package-mode = false
-
-[tool.poetry.group.dev.dependencies]
 
 [build-system]
 requires = ["poetry-core"]
